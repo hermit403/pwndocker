@@ -1,7 +1,7 @@
 version: '3'
 services:
     pwn:
-        container_name: pwn_test
+        container_name: pwn
         image: skysider/pwndocker
         security_opt:
             - seccomp:unconfined

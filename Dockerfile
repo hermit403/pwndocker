@@ -1,6 +1,5 @@
-FROM phusion/baseimage:focal-1.2.0
-LABEL maintainer="skysider <skysider@163.com>"
-
+FROM phusion/baseimage:jammy-1.0.1
+LABEL maintainer="hermit403"
 ENV DEBIAN_FRONTEND noninteractive
 
 ENV TZ Asia/Shanghai
@@ -23,8 +22,6 @@ RUN dpkg --add-architecture i386 && \
     python3-dev \
     python3-pip \
     build-essential \
-    ruby \
-    ruby-dev \
     tmux \
     strace \
     ltrace \
@@ -43,17 +40,24 @@ RUN dpkg --add-architecture i386 && \
     rpm2cpio cpio \
     zstd \
     zsh \
-    tzdata --fix-missing && \
+    tzdata \
+    gnupg2 \
+    curl \
+    ruby \
+    ruby-dev \
+    procps \
+    --fix-missing && \
     rm -rf /var/lib/apt/list/*
 
 RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
 
-RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    
-RUN version=$(curl -s https://api.github.com/repos/radareorg/radare2/releases/latest | grep -P '"tag_name": "(.*)"' -o| awk '{print $2}' | awk -F"\"" '{print $2}') && \
-    wget https://github.com/radareorg/radare2/releases/download/${version}/radare2_${version}_amd64.deb && \
-    dpkg -i radare2_${version}_amd64.deb && rm radare2_${version}_amd64.deb
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+    chsh -s /bin/zsh && \
+    echo 'exec /bin/zsh' >> ~/.bashrc
+
+RUN wget -q https://github.com/radareorg/radare2/releases/download/6.0.0/radare2_6.0.0_amd64.deb && \
+    apt install -y ./radare2_6.0.0_amd64.deb && rm radare2_6.0.0_amd64.deb
 
 RUN python3 -m pip config set global.index-url http://pypi.tuna.tsinghua.edu.cn/simple && \
     python3 -m pip config set global.trusted-host pypi.tuna.tsinghua.edu.cn && \
@@ -71,7 +75,7 @@ RUN python3 -m pip config set global.index-url http://pypi.tuna.tsinghua.edu.cn/
     pebble \
     r2pipe
 
-RUN gem install one_gadget seccomp-tools && rm -rf /var/lib/gems/2.*/cache/*
+RUN gem install one_gadget && gem install seccomp-tools  && rm -rf /var/lib/gems/3.*/cache/*
 
 RUN git clone --depth 1 https://github.com/pwndbg/pwndbg && \
     cd pwndbg && chmod +x setup.sh && ./setup.sh
@@ -129,5 +133,10 @@ RUN chmod a+x /ctf/linux_server /ctf/linux_server64
 ARG PWNTOOLS_VERSION
 
 RUN python3 -m pip install --no-cache-dir pwntools==${PWNTOOLS_VERSION}
+
+RUN rm -rf /root/.cache /root/.pip /tmp/* /var/tmp/* && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* \
+    chmod 755 /ctf/work
 
 CMD ["/sbin/my_init"]
