@@ -9,3 +9,4 @@ services:
             - SYS_PTRACE
         ports:
             - "23946:23946"
+        privileged: true
